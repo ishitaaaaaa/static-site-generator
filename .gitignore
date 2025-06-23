@@ -1,0 +1,16 @@
+# Node modules
+node_modules/
+
+# Log files
+*.log
+
+# dotenv environment files (if any)
+.env
+
+# Dist folder (auto-generated HTML)
+dist/
+
+# OS / Editor-specific
+.DS_Store
+Thumbs.db
+.vscode/

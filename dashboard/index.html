@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Static Site Generator Dashboard</title>
+  <style>
+   :root {
+  --bg-color: #f7f9fc;
+  --text-color: #111;
+  --button-bg: #007acc;
+  --button-hover: #005fa3;
+  --link-color: #0066cc;
+  --card-bg: #ffffff;
+  --border-color: #ddd;
+  --status-success: green;
+}
+
+body.dark {
+  --bg-color: #1e1e1e;
+  --text-color: #f5f5f5;
+  --button-bg: #333;
+  --button-hover: #555;
+  --link-color: #66ccff;
+  --card-bg: #2a2a2a;
+  --border-color: #444;
+  --status-success: #00ff88;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: background 0.3s, color 0.3s;
+  min-height: 100vh;
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.theme-toggle label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+h1 {
+  font-size: 2.2rem;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+h1::before {
+  content: "📄";
+}
+
+form {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 30px;
+  align-items: center;
+}
+
+input[type="file"] {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+button {
+  padding: 10px 20px;
+  background-color: var(--button-bg);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s, transform 0.2s;
+}
+
+button:hover {
+  background-color: var(--button-hover);
+  transform: scale(1.02);
+}
+
+#status {
+  margin-top: 12px;
+  font-weight: bold;
+  color: var(--status-success);
+  text-align: center;
+}
+
+.link-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 40px;
+}
+
+.link-row > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.link-left {
+  align-items: flex-start;
+}
+.link-center {
+  align-items: center;
+}
+.link-right {
+  align-items: flex-end;
+}
+
+.link-row a {
+  text-decoration: none;
+  color: var(--link-color);
+  font-weight: 600;
+  padding: 6px 12px;
+  background: var(--card-bg);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+
+.link-row a:hover {
+  background-color: rgba(0, 102, 204, 0.1);
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: red;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.delete-btn:hover {
+  transform: scale(1.3);
+}
+
+  </style>
+</head>
+<body>
+  <div class="theme-toggle">
+    <label>
+      <input type="checkbox" id="toggleMode" />
+      🌙 Dark Mode
+    </label>
+  </div>
+
+  <h1>Upload Markdown File</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="markdown" accept=".md" required />
+    <button type="submit">Upload & Generate HTML</button>
+  </form>
+
+  <div id="status"></div>
+
+  <div class="link-row" id="pageLinks">
+    <div class="link-left"></div>
+    <div class="link-center"></div>
+    <div class="link-right"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const status = document.getElementById('status');
+    const pageLinks = document.getElementById('pageLinks');
+    const toggleMode = document.getElementById('toggleMode');
+
+    // Upload and generation handler
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      status.textContent = "Uploading and generating HTML... ⏳";
+
+      try {
+        const res = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+        status.textContent = data.message + " ✅";
+        fetchPages();
+      } catch (err) {
+        console.error(err);
+        status.textContent = "❌ Upload failed.";
+      }
+    });
+
+    // Fetch generated HTML links
+   async function fetchPages() {
+  const res = await fetch('/pages');
+  const pages = await res.json();
+
+  const left = pageLinks.querySelector('.link-left');
+  const center = pageLinks.querySelector('.link-center');
+  const right = pageLinks.querySelector('.link-right');
+
+  left.innerHTML = '';
+  center.innerHTML = '';
+  right.innerHTML = '';
+
+  pages.sort();
+
+  pages.forEach((page, idx) => {
+    const pageName = page.replace('.html', '');
+    const pageBlock = document.createElement('div');
+    pageBlock.style.display = 'flex';
+    pageBlock.style.alignItems = 'center';
+    pageBlock.style.gap = '8px';
+
+    const link = document.createElement('a');
+    link.href = `/dist/${page}`;
+    link.textContent = pageName;
+    link.target = '_blank';
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '🗑️';
+    delBtn.title = `Delete ${pageName}`;
+    delBtn.style.padding = '2px 6px';
+    delBtn.style.cursor = 'pointer';
+    delBtn.style.border = 'none';
+    delBtn.style.background = 'transparent';
+    delBtn.style.color = 'crimson';
+    delBtn.style.fontSize = '1rem';
+
+    delBtn.onclick = async () => {
+      if (confirm(`Are you sure you want to delete '${pageName}.md'?`)) {
+        const res = await fetch(`/delete/${pageName}`, { method: 'DELETE' });
+        const result = await res.json();
+        status.textContent = result.message;
+        fetchPages(); // Refresh list
+      }
+    };
+
+    pageBlock.appendChild(link);
+    pageBlock.appendChild(delBtn);
+
+    if (idx % 3 === 0) left.appendChild(pageBlock);
+    else if (idx % 3 === 1) center.appendChild(pageBlock);
+    else right.appendChild(pageBlock);
+  });
+}
+
+
+    fetchPages(); // On page load
+
+    // 🌙 Dark Mode Toggle Handling
+    toggleMode.addEventListener('change', () => {
+      const isDark = toggleMode.checked;
+      document.body.classList.toggle('dark', isDark);
+      localStorage.setItem('darkMode', isDark);
+    });
+
+    // Load theme preference
+    window.addEventListener('DOMContentLoaded', () => {
+      const isDark = localStorage.getItem('darkMode') === 'true';
+      document.body.classList.toggle('dark', isDark);
+      toggleMode.checked = isDark;
+    });
+  </script>
+</body>
+</html>
