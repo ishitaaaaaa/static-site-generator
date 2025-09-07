@@ -26,14 +26,6 @@ This project is a full-featured **Static Site Generator** powered by **Node.js**
 
 ---
 
-## 🚀 Live Demo
-
-👉 [Live Project Link](https://your-render-url.onrender.com)  
-_(Replace this with your actual Render or Railway URL)_
-
----
-
----
 
 ## 🧪 How to Run Locally
 
